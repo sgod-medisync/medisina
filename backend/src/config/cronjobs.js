@@ -60,7 +60,7 @@ export const initializeCronJobs = () => {
     scheduled: true,
     timezone: "Asia/Manila"
   });
-  // ping()
+  ping()
   logger.info('Cron jobs initialized: Daily cleanup of notifications and audit trails at 2:00 AM');
 };
 

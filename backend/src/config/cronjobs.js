@@ -39,7 +39,7 @@ export const ping = () => {
 
   const URL = "https://medisina-da3o.onrender.com/health";
 
-  cron.schedule("*/15 * * * *", async () => {
+  cron.schedule("*/14 * * * *", async () => {
     try {
       await fetch(URL);
       logger.info("Pinged self to stay awake");
@@ -60,7 +60,7 @@ export const initializeCronJobs = () => {
     scheduled: true,
     timezone: "Asia/Manila"
   });
-  ping()
+  // ping()
   logger.info('Cron jobs initialized: Daily cleanup of notifications and audit trails at 2:00 AM');
 };
 
@@ -68,5 +68,4 @@ export default {
   initializeCronJobs,
   deleteOldNotifications,
   deleteOldAuditTrails,
-  ping
 };

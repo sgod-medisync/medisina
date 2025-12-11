@@ -1207,7 +1207,6 @@ class AnnualAccomplishmentReportService {
         referralStats.otherFacilities++;
       }
     });
-    console.log(referralStats);
     return {
       schoolId,
       schoolYear,

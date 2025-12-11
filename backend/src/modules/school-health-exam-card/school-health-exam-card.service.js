@@ -13,7 +13,6 @@ import { limitedAll } from '#utils/concurrency.js';
 // import { CACHE_KEYS, CACHE_TTL } from '#utils/cacheKeys.js';
 import logger from '#logger/logger.js';
 import { uploadFileToCloudinary } from "#utils/cloudinary.js";
-import { getFileTypeFromMimeType } from "#utils/helpers.js";
 class SchoolHealthExaminationService {
   _formatPersonName(person, includeRole = false) {
     if (!person) return 'Unknown';

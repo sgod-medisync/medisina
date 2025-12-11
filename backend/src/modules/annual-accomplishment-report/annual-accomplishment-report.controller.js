@@ -203,7 +203,7 @@ export const getHealthProfileStatistics = asyncHandler(async (req, res) => {
     schoolId,
     schoolYear,
     false,
-    null   
+    null
   );
   return res.status(StatusCodes.OK).json({
     data: statistics
@@ -241,10 +241,10 @@ export const exportRecords = asyncHandler(async (req, res) => {
   cell('D18', g(report, 'generalInformation.schoolEnrollment.female', 0));
 
 
-  cell('D21', g(report, 'generalInformation.schoolPersonnel.teaching.male', 0));
-  cell('D22', g(report, 'generalInformation.schoolPersonnel.teaching.female', 0));
-  cell('D24', g(report, 'generalInformation.schoolPersonnel.nonTeaching.male', 0));
-  cell('D25', g(report, 'generalInformation.schoolPersonnel.nonTeaching.female', 0));
+  cell('E21', g(report, 'generalInformation.schoolPersonnel.teaching.male', 0));
+  cell('E22', g(report, 'generalInformation.schoolPersonnel.teaching.female', 0));
+  cell('E24', g(report, 'generalInformation.schoolPersonnel.nonTeaching.male', 0));
+  cell('E25', g(report, 'generalInformation.schoolPersonnel.nonTeaching.female', 0));
 
 
   cell('E29', g(report, 'healthServices.healthAppraisal.assessed.learners', 0));

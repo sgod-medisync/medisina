@@ -37,17 +37,17 @@ const personCountValidation = Joi.object({
     "number.integer": "Female count must be an integer",
     "number.min": "Female count cannot be negative"
   })
-});
+}).default({ male: 0, female: 0 });
 
 const staffCountValidation = Joi.object({
   teaching: Joi.object({
     male: Joi.number().integer().min(0).default(0),
     female: Joi.number().integer().min(0).default(0)
-  }),
+  }).default({ male: 0, female: 0 }),
   nonTeaching: Joi.object({
     male: Joi.number().integer().min(0).default(0),
     female: Joi.number().integer().min(0).default(0)
-  })
+  }).default({ male: 0, female: 0 })
 });
 
 const healthAssessmentValidation = Joi.object({
@@ -266,6 +266,12 @@ const createReport = Joi.object({
   generalInformation: Joi.object({
     schoolEnrollment: personCountValidation,
     schoolPersonnel: staffCountValidation
+  }).default({
+    schoolEnrollment: { male: 0, female: 0 },
+    schoolPersonnel: {
+      teaching: { male: 0, female: 0 },
+      nonTeaching: { male: 0, female: 0 }
+    }
   }),
 
   // Health Services

@@ -8,6 +8,9 @@ import Personnel from "#modules/personnel/personnel.model.js";
 import DailyTreatmentRecord from "#modules/daily-treatment-record/daily-treatment-record.model.js";
 import SchoolHealthExamCard from "#modules/school-health-exam-card/school-health-exam-card.model.js";
 import PersonnelHealthCard from "#modules/personnel-health-card/personnel-health-card.model.js";
+import DentalTreatmentRecord from "#modules/dental-treatment-record/dental-treatment-record.model.js";
+import DentalRecordChart from "#modules/dental-record-chart/dental-record-chart.model.js";
+import ReferralSlip from "#modules/referaal-slip/referral-slip.model.js";
 
 class AnnualAccomplishmentReportService {
 
@@ -960,6 +963,260 @@ class AnnualAccomplishmentReportService {
     };
   }
 
+  async getDentalStatisticsBySchool(schoolId, schoolYear) {
+    if (!schoolId || !schoolYear) {
+      throw new ApiError('School ID and school year are required', StatusCodes.BAD_REQUEST);
+    }
+
+    const [startYear, endYear] = schoolYear.split('-').map(y => parseInt(y));
+    const startDate = new Date(startYear, 5, 1);
+    const endDate = new Date(endYear, 4, 31, 23, 59, 59);
+
+    const dentalTreatmentRecords = await DentalTreatmentRecord.find({
+      schoolId: schoolId,
+      isDeleted: false,
+      'treatments.date': { $gte: startDate, $lte: endDate }
+    })
+      .populate('personnel', 'position')
+      .lean();
+
+
+    const allDentalRecordCharts = await DentalRecordChart.find({
+      isDeleted: false,
+      dateOfExamination: { $gte: startDate, $lte: endDate }
+    })
+      .populate('student', 'schoolId')
+      .populate('personnel', 'schoolId')
+      .lean();
+
+    const dentalRecordCharts = allDentalRecordCharts.filter(chart => {
+      if (chart.schoolId === schoolId) return true;
+
+      if (chart.student && chart.student.schoolId === schoolId) return true;
+
+      if (chart.personnel && Array.isArray(chart.personnel.schoolId) &&
+        chart.personnel.schoolId.includes(schoolId)) return true;
+
+      return false;
+    });
+
+    const stats = { learners: 0, teachers: 0, ntp: 0 };
+    const teachingKeywords = [
+      'teacher', 'instructor', 'professor', 'educator', 'faculty',
+      'master teacher', 'head teacher', 'principal', 'assistant principal',
+      'department head', 'coordinator', 'guidance counselor', 'librarian'
+    ];
+
+    dentalTreatmentRecords.forEach(record => {
+      if (record.student) {
+        stats.learners++;
+      } else if (record.personnel) {
+        const position = record.personnel.position?.toLowerCase() || '';
+        const isTeaching = teachingKeywords.some(keyword => position.includes(keyword));
+        if (isTeaching) stats.teachers++;
+        else stats.ntp++;
+      }
+    });
+
+    const dentalConditions = {
+      gingivitis: 0,
+      periodontalDisease: 0,
+      malocclusion: 0,
+      supernumeraryTeeth: 0,
+      retainedDecidousTeeth: 0,
+      decubitalUlcer: 0,
+      calculus: 0,
+      cleftLipPalate: 0,
+      fluorosis: 0,
+      others: {
+        count: 0,
+        specify: ''
+      },
+      totalDMFT: 0,
+      totalDmft: 0
+    };
+
+    const othersSet = new Set();
+    dentalRecordCharts.forEach(chart => {
+      // Check periodontal screening for gingivitis (boolean field)
+      if (chart.periodontalScreening?.gingivitis === true) {
+        dentalConditions.gingivitis++;
+      }
+
+      // Check periodontal screening for periodontal disease (boolean fields)
+      if (chart.periodontalScreening?.earlyPeriodontitis === true ||
+        chart.periodontalScreening?.moderatePeriodontitis === true ||
+        chart.periodontalScreening?.advancedPeriodontitis === true) {
+        dentalConditions.periodontalDisease++;
+      }
+
+      // Check occlusion for malocclusion (string fields with meaningful values)
+      if (chart.occlusion) {
+        const hasOcclusionIssues = Object.values(chart.occlusion).some(value =>
+          value && typeof value === 'string' && value.trim() !== '' &&
+          value.toLowerCase() !== 'normal' && value.toLowerCase() !== 'n/a'
+        );
+        if (hasOcclusionIssues) {
+          dentalConditions.malocclusion++;
+        }
+      }
+
+      let hasSupernumerary = false;
+      let hasRetainedDeciduous = false;
+      let hasCalculus = false;
+      let hasFluorosis = false;
+
+      const allTeeth = [...(chart.permanentTeeth || []), ...(chart.temporaryTeeth || [])];
+      console.log(allTeeth);
+      allTeeth.forEach(tooth => {
+        if (tooth.status === 'Supernumerary') {
+          hasSupernumerary = true;
+        }
+
+        if (tooth.notes?.toLowerCase().includes('retained') ||
+          tooth.condition?.toLowerCase().includes('retained')) {
+          hasRetainedDeciduous = true;
+        }
+
+        // Check for calculus
+        if (tooth.condition?.toLowerCase().includes('calculus') ||
+          tooth.notes?.toLowerCase().includes('calculus')) {
+          hasCalculus = true;
+        }
+
+        // Check for fluorosis
+        if (tooth.condition?.toLowerCase().includes('fluorosis') ||
+          tooth.notes?.toLowerCase().includes('fluorosis')) {
+          hasFluorosis = true;
+        }
+      });
+
+      // Increment patient counts (not tooth counts)
+      if (hasSupernumerary) dentalConditions.supernumeraryTeeth++;
+      if (hasRetainedDeciduous) dentalConditions.retainedDecidousTeeth++;
+      if (hasCalculus) dentalConditions.calculus++;
+      if (hasFluorosis) dentalConditions.fluorosis++;
+
+      // Check remarks for cleft lip/palate and decubital ulcer
+      if (chart.remarks) {
+        const remarksLower = chart.remarks.toLowerCase();
+        if (remarksLower.includes('cleft lip') || remarksLower.includes('cleft palate')) {
+          dentalConditions.cleftLipPalate++;
+        }
+        if (remarksLower.includes('decubital ulcer') || remarksLower.includes('ulcer')) {
+          dentalConditions.decubitalUlcer++;
+        }
+
+        if (!remarksLower.includes('cleft lip') &&
+          !remarksLower.includes('cleft palate') &&
+          !remarksLower.includes('decubital ulcer') &&
+          !remarksLower.includes('ulcer') &&
+          chart.remarks.trim() !== '') {
+          othersSet.add(chart.remarks.trim());
+        }
+      }
+
+      // Calculate DMFT (Decayed, Missing, Filled Teeth) for permanent teeth
+      const permanentTeeth = chart.permanentTeeth || [];
+      let dmftCount = 0;
+      permanentTeeth.forEach(tooth => {
+        if (tooth.status === 'Decayed' ||
+          tooth.status === 'Missing' ||
+          (tooth.restoration && tooth.restoration.trim() !== '') ||
+          tooth.condition?.toLowerCase().includes('filled')) {
+          dmftCount++;
+        }
+      });
+      dentalConditions.totalDMFT += dmftCount;
+
+      // Calculate dmft (decayed, missing, filled teeth) for temporary teeth
+      const temporaryTeeth = chart.temporaryTeeth || [];
+      let dmftCountTemp = 0;
+      temporaryTeeth.forEach(tooth => {
+        if (tooth.status === 'Decayed' ||
+          tooth.status === 'Missing' ||
+          (tooth.restoration && tooth.restoration.trim() !== '') ||
+          tooth.condition?.toLowerCase().includes('filled')) {
+          dmftCountTemp++;
+        }
+      });
+      dentalConditions.totalDmft += dmftCountTemp;
+    });
+
+    // Set others count and specify
+    dentalConditions.others.count = othersSet.size;
+    if (othersSet.size > 0) {
+      dentalConditions.others.specify = Array.from(othersSet).slice(0, 5).join('; ');
+    }
+    return {
+      schoolId,
+      schoolYear,
+      dentalServices: stats,
+      dentalConditions,
+      total: stats.learners + stats.teachers + stats.ntp,
+      generatedAt: new Date()
+    };
+  }
+
+  async getReferralStatisticsBySchool(schoolId, schoolYear) {
+    if (!schoolId || !schoolYear) {
+      throw new ApiError('School ID and school year are required', StatusCodes.BAD_REQUEST);
+    }
+
+    const [startYear, endYear] = schoolYear.split('-').map(y => parseInt(y));
+    const startDate = new Date(startYear, 5, 1);
+    const endDate = new Date(endYear, 4, 31, 23, 59, 59);
+
+    const referralSlips = await ReferralSlip.find({
+      'referralSlip.date': { $gte: startDate, $lte: endDate },
+      isDeleted: false
+    }).lean();
+
+    const referralStats = {
+      physician: 0,
+      dentist: 0,
+      guidance: 0,
+      otherFacilities: 0,
+      rhuDistrictProvincialHospital: 0
+    };
+
+    referralSlips.forEach(slip => {
+      const referralTo = slip.referralSlip?.to || '';
+
+      if (referralTo === 'Physician/Doctor (MD)' ||
+        referralTo.toLowerCase().includes('physician') ||
+        referralTo.toLowerCase().includes('doctor') ||
+        referralTo.toLowerCase().includes('md')) {
+        referralStats.physician++;
+      } else if (referralTo === 'Dentist/Dental Clinic' ||
+        referralTo.toLowerCase().includes('dentist') ||
+        referralTo.toLowerCase().includes('dental')) {
+        referralStats.dentist++;
+      } else if (referralTo === 'Guidance Counselor/Psychologist' ||
+        referralTo.toLowerCase().includes('guidance') ||
+        referralTo.toLowerCase().includes('counselor') ||
+        referralTo.toLowerCase().includes('psychologist')) {
+        referralStats.guidance++;
+      } else if (referralTo === 'RHU/District/Provincial Hospital' ||
+        referralTo.toLowerCase().includes('rhu') ||
+        referralTo.toLowerCase().includes('hospital') ||
+        referralTo.toLowerCase().includes('district') ||
+        referralTo.toLowerCase().includes('provincial')) {
+        referralStats.rhuDistrictProvincialHospital++;
+      } else if (referralTo === 'Other' || referralTo.trim() !== '') {
+        referralStats.otherFacilities++;
+      }
+    });
+    console.log(referralStats);
+    return {
+      schoolId,
+      schoolYear,
+      referral: referralStats,
+      total: Object.values(referralStats).reduce((sum, val) => sum + val, 0),
+      generatedAt: new Date()
+    };
+  }
+
   async getHealthProfileStatisticsBySchool(schoolId, schoolYear, autoPopulate = false, reportId = null) {
     if (!schoolId) {
       throw new ApiError('School ID is required', StatusCodes.BAD_REQUEST);
@@ -978,7 +1235,9 @@ class AnnualAccomplishmentReportService {
       healthProblems,
       treatments,
       dewormingIron,
-      consultations
+      consultations,
+      dentalServices,
+      referrals
     ] = await Promise.all([
       this.getEnrollmentStatisticsBySchool(schoolId, schoolYear),
       this.getPersonnelStatisticsBySchool(schoolId),
@@ -987,7 +1246,9 @@ class AnnualAccomplishmentReportService {
       this.getHealthProblemsStatisticsBySchool(schoolId, schoolYear),
       this.getTreatmentStatisticsBySchool(schoolId, schoolYear),
       this.getDewormingIronStatisticsBySchool(schoolId, schoolYear),
-      this.getConsultationStatisticsBySchool(schoolId, schoolYear)
+      this.getConsultationStatisticsBySchool(schoolId, schoolYear),
+      this.getDentalStatisticsBySchool(schoolId, schoolYear),
+      this.getReferralStatisticsBySchool(schoolId, schoolYear)
     ]);
 
     // Use data directly from Annual Report statistics methods (already in correct format)
@@ -1017,7 +1278,22 @@ class AnnualAccomplishmentReportService {
           vaccineSpecified: ''
         },
         consultationAttended: consultations.consultations || { learners: 0, teachers: 0, ntp: 0 },
-        referral: {
+        dentalServices: dentalServices.dentalServices || { learners: 0, teachers: 0, ntp: 0 },
+        dentalConditions: dentalServices.dentalConditions || {
+          gingivitis: 0,
+          periodontalDisease: 0,
+          malocclusion: 0,
+          supernumeraryTeeth: 0,
+          retainedDecidousTeeth: 0,
+          decubitalUlcer: 0,
+          calculus: 0,
+          cleftLipPalate: 0,
+          fluorosis: 0,
+          others: { count: 0, specify: '' },
+          totalDMFT: 0,
+          totalDmft: 0
+        },
+        referral: referrals.referral || {
           physician: 0,
           dentist: 0,
           guidance: 0,
@@ -1049,7 +1325,9 @@ class AnnualAccomplishmentReportService {
           overall: healthProblems.total || 0
         },
         treatments: treatments.total || 0,
-        consultations: consultations.total || 0
+        consultations: consultations.total || 0,
+        dentalServices: dentalServices.total || 0,
+        referrals: referrals.total || 0
       },
       generatedAt: new Date()
     };
@@ -1072,6 +1350,9 @@ class AnnualAccomplishmentReportService {
         'healthServices.pupilsGivenIronSupplement': statistics.healthServices.pupilsGivenIronSupplement,
         'healthServices.pupilsImmunized': statistics.healthServices.pupilsImmunized,
         'healthServices.consultationAttended': statistics.healthServices.consultationAttended,
+        'healthServices.dentalServices': statistics.healthServices.dentalServices,
+        'healthServices.dentalConditions': statistics.healthServices.dentalConditions,
+        'healthServices.referral': statistics.healthServices.referral,
         lastAutoPopulated: new Date()
       };
 

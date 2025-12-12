@@ -142,7 +142,6 @@ export const exportDentalRecordsToExcel = asyncHandler(async (req, res) => {
     });
   }
 
-  console.log(records);
 
   // Create PDF document
   const pdfDoc = await PDFDocument.create();

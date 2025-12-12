@@ -86,6 +86,43 @@ class PersonnelService {
     return personnel;
   }
 
+  async getMyPersonnelRecord(userId) {
+
+
+    // Get personnel by user ID
+    const personnel = await PersonnelModel.findOne({
+      createdBy: userId,
+      isDeleted: false
+    }).lean();
+
+    const PersonnelHealthCardModel = (await import('#modules/personnel-health-card/personnel-health-card.model.js')).default;
+    const ChiefComplaintModel = (await import('#modules/chief-complaint/chief-complaint.model.js')).default;
+
+    const [healthCards, chiefComplaints] = await Promise.all([
+      PersonnelHealthCardModel.find({
+        personnel: personnel?._id,
+      })
+        .populate('interviewedBy.user', 'firstName lastName role civilStatus dateOfBirth gender age position')
+        .populate('approvedBy', 'firstName lastName role')
+        .sort({ createdAt: -1 })
+        .lean(),
+
+      ChiefComplaintModel.find({
+        personnel: personnel?._id
+      })
+        .populate('createdBy', 'firstName lastName role')
+        .populate('approvedBy', 'firstName lastName role')
+        .sort({ createdAt: -1 })
+        .lean()
+    ]);
+
+    return {
+      personnel,
+      healthCards,
+      chiefComplaints
+    };
+  }
+
   async getPersonnelByName(personnelName) {
     //     const cacheKey = CACHE_KEYS.PERSONNEL.BY_NAME(personnelName);
 

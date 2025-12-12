@@ -113,13 +113,16 @@ export const restorePersonnelById = asyncHandler(async (req, res) => {
 export const getMyPersonnelRecord = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  const personnel = await personnelService.getPersonnelByUserId(userId);
+  const result = await personnelService.getMyPersonnelRecord(userId);
 
-  if (!personnel) {
+  if (!result) {
     return res.status(StatusCodes.OK).json({ data: null });
   }
 
-  return res.status(StatusCodes.OK).json({ data: personnel });
+  return res.status(StatusCodes.OK).json({
+    message: 'Personnel record with health history retrieved successfully',
+    data: result
+  });
 })
 
 export const getCompletePersonnelHistory = asyncHandler(async (req, res) => {

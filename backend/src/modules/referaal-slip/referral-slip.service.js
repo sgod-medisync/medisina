@@ -22,7 +22,6 @@ class ReferralSlipService {
       ...data,
       createdBy: userId
     });
-console.log(data);
     await record.populate('createdBy', 'firstName lastName role');
 
     await notificationService.createNotification({

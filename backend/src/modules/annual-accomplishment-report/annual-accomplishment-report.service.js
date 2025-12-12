@@ -1067,7 +1067,6 @@ class AnnualAccomplishmentReportService {
       let hasFluorosis = false;
 
       const allTeeth = [...(chart.permanentTeeth || []), ...(chart.temporaryTeeth || [])];
-      console.log(allTeeth);
       allTeeth.forEach(tooth => {
         if (tooth.status === 'Supernumerary') {
           hasSupernumerary = true;

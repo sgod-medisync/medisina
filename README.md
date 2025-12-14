@@ -31,7 +31,6 @@
 		 # Server
 		 PORT=3000
 		 HOST=localhost
-		 DEFAULT_IMG=your_default_image_url
 		 CLIENT_URL=http://localhost:5173
 
 		 SESSION_SECRET=your_session_secret

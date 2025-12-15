@@ -35,12 +35,12 @@ export const updatePersonnelSchema = Joi.object({
   middleName: Joi.string().trim().max(100).allow(null, ""),
   lastName: Joi.string().trim().min(1).max(100),
 
-  gender: Joi.string().valid(...gender),
+  gender: Joi.string().valid(...gender).allow(null, "").optional(),
 
-  age: Joi.number().integer().min(0).max(120),
+  age: Joi.number().integer().min(0).max(120).optional(),
   dateOfBirth: Joi.date().max("now").allow(null, "").optional(),
 
-  civilStatus: Joi.string().valid(...civilStatus),
+  civilStatus: Joi.string().valid(...civilStatus).allow(null, "").optional(),
 
   position: Joi.string().trim().max(100).allow(null, ""),
   schoolDistrictDivision: Joi.array().items(Joi.string().trim().max(150)).allow(null, "").optional(),

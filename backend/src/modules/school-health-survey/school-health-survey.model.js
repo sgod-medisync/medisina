@@ -177,7 +177,7 @@ const schoolHealthSurveySchema = new Schema({
 
   schoolName: { type: String, required: true, trim: true },
   district: { type: String, required: true, trim: true },
-  address: { type: String,  trim: true },
+  address: { type: String, trim: true },
   schoolId: { type: String, required: true, trim: true },
   schoolHeadName: { type: String, required: true, trim: true },
   contactNumber: { type: String, trim: true },

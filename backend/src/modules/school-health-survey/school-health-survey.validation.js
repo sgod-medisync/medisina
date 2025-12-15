@@ -169,10 +169,7 @@ const createSchoolHealthSurvey = Joi.object({
     'string.empty': 'District is required',
     'any.required': 'District is required'
   }),
-  address: Joi.string().required().trim().messages({
-    'string.empty': 'Address is required',
-    'any.required': 'Address is required'
-  }),
+  address: Joi.string().trim(),
   schoolId: Joi.string().required().trim().messages({
     'string.empty': 'School ID is required',
     'any.required': 'School ID is required'
@@ -181,10 +178,7 @@ const createSchoolHealthSurvey = Joi.object({
     'string.empty': 'School head name is required',
     'any.required': 'School head name is required'
   }),
-  contactNumber: Joi.string().required().trim().messages({
-    'string.empty': 'Contact number is required',
-    'any.required': 'Contact number is required'
-  }),
+  contactNumber: Joi.string().trim(),
 
   generalInformation: Joi.object({
     enrollment: Joi.object({

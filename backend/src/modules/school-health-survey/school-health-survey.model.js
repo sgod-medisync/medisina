@@ -177,10 +177,10 @@ const schoolHealthSurveySchema = new Schema({
 
   schoolName: { type: String, required: true, trim: true },
   district: { type: String, required: true, trim: true },
-  address: { type: String, required: true, trim: true },
+  address: { type: String, trim: true },
   schoolId: { type: String, required: true, trim: true },
   schoolHeadName: { type: String, required: true, trim: true },
-  contactNumber: { type: String, required: true, trim: true },
+  contactNumber: { type: String, trim: true },
 
   generalInformation: {
     enrollment: {
@@ -230,6 +230,9 @@ schoolHealthSurveySchema.index({ schoolName: 1 });
 schoolHealthSurveySchema.index({ createdAt: -1 });
 schoolHealthSurveySchema.index({ surveyStatus: 1 });
 schoolHealthSurveySchema.index({ shs: 1 });
+schoolHealthSurveySchema.index({ isActive: 1 });
+schoolHealthSurveySchema.index({ surveyStatus: 1, isActive: 1 });
+schoolHealthSurveySchema.index({ createdBy: 1, isActive: 1 });
 
 
 schoolHealthSurveySchema.pre('save', async function (next) {

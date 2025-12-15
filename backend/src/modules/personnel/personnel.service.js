@@ -16,6 +16,33 @@ import ChiefComplaintModel from '#modules/chief-complaint/chief-complaint.model.
 import DentalTreatmentRecordModel from '#modules/dental-treatment-record/dental-treatment-record.model.js';
 import DentalRecordChartModel from '#modules/dental-record-chart/dental-record-chart.model.js';
 
+const userRoleCache = {
+  nurseTeacherIds: null,
+  lastFetched: null,
+  TTL: 5 * 60 * 1000,
+
+  async getIds() {
+    const now = Date.now();
+    if (this.nurseTeacherIds && this.lastFetched && (now - this.lastFetched < this.TTL)) {
+      return this.nurseTeacherIds;
+    }
+
+    const users = await User.find({
+      role: { $in: ['Nurse', 'Teacher'] },
+      isDeleted: false
+    }).select('_id').lean();
+
+    this.nurseTeacherIds = users.map(user => user._id);
+    this.lastFetched = now;
+    return this.nurseTeacherIds;
+  },
+
+  invalidate() {
+    this.nurseTeacherIds = null;
+    this.lastFetched = null;
+  }
+};
+
 class PersonnelService {
   async createPersonnel(data, userId) {
 
@@ -147,14 +174,13 @@ class PersonnelService {
     };
 
     let districts = schoolDistrictDivision;
-
     if (!districts || (Array.isArray(districts) && districts.length === 0)) {
       const currentUser = await PersonnelModel.findById(userId).select('schoolDistrictDivision').lean();
       districts = currentUser?.schoolDistrictDivision;
     }
 
-    const nurseUsers = await User.find({ role: 'Nurse', isDeleted: false }).select('_id').lean();
-    const nurseUserIds = nurseUsers.map(nurse => nurse._id);
+    // Use cached nurse/teacher user IDs
+    const nurseUserIds = await userRoleCache.getIds();
 
     if (districts && Array.isArray(districts) && districts.length > 0) {
       query.$and = [
@@ -214,8 +240,8 @@ class PersonnelService {
       districts = currentUser?.schoolDistrictDivision;
     }
 
-    const nurseUsers = await User.find({ role: 'Nurse', isDeleted: false }).select('_id').lean();
-    const nurseUserIds = nurseUsers.map(nurse => nurse._id);
+    // Use cached nurse/teacher user IDs
+    const nurseUserIds = await userRoleCache.getIds();
 
     if (districts && Array.isArray(districts) && districts.length > 0) {
       searchQuery.$and = [
@@ -288,6 +314,39 @@ class PersonnelService {
         runValidators: true
       }
     ).select('-password -resetPasswordToken');
+
+    const schoolFieldsToSync = ['schoolName', 'schoolId', 'schoolDistrictDivision'];
+    const hasSchoolFieldsChanged = schoolFieldsToSync.some(field => safeUpdateData[field] !== undefined);
+
+    if (hasSchoolFieldsChanged && existingPersonnel.createdBy) {
+      const userUpdateData = {};
+
+      if (safeUpdateData.schoolName !== undefined) {
+        userUpdateData.schoolName = Array.isArray(safeUpdateData.schoolName)
+          ? safeUpdateData.schoolName
+          : [safeUpdateData.schoolName];
+      }
+      if (safeUpdateData.schoolId !== undefined) {
+        userUpdateData.schoolId = Array.isArray(safeUpdateData.schoolId)
+          ? safeUpdateData.schoolId
+          : [safeUpdateData.schoolId];
+      }
+      if (safeUpdateData.schoolDistrictDivision !== undefined) {
+        userUpdateData.schoolDistrictDivision = Array.isArray(safeUpdateData.schoolDistrictDivision)
+          ? safeUpdateData.schoolDistrictDivision
+          : [safeUpdateData.schoolDistrictDivision];
+      }
+
+      if (Object.keys(userUpdateData).length > 0) {
+        await User.findByIdAndUpdate(
+          existingPersonnel.createdBy,
+          { $set: userUpdateData },
+          { runValidators: true }
+        );
+        logger.info(`Updated user account school info for personnel ${updatedPersonnel.perId}`);
+      }
+    }
+
     await notificationService.createNotification({
       recipientId: userId,
       title: NOTIFICATION_TITLE.PERSONNEL_BIO_DATA,
@@ -295,7 +354,7 @@ class PersonnelService {
       type: NOTIFICATION_TYPES.RECORD_UPDATE,
       priority: PRIORITY_LEVELS.LOW,
       isActionRequired: false
-    })
+    });
 
     return updatedPersonnel;
   }

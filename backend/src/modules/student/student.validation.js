@@ -63,6 +63,7 @@ export const createStudentSchema = Joi.object({
   ),
   heightInCm: Joi.number().min(0).max(250).precision(1).optional().default(0),
   weightInKg: Joi.number().min(0).max(300).precision(1).optional().default(0),
+  nutritionalStatusBMI: Joi.string().optional().allow(""),
   birthplace: Joi.string().trim().allow(null, ""),
 
   address: Joi.string().trim().allow(null, ""),
@@ -130,6 +131,7 @@ export const updateStudentSchema = Joi.object({
   ),
   heightInCm: Joi.number().min(0).max(250).precision(1).optional().default(0),
   weightInKg: Joi.number().min(0).max(300).precision(1).optional().default(0),
+  nutritionalStatusBMI: Joi.string().optional().allow(""),
   birthplace: Joi.string().trim().allow(null, ""),
   isDropOut: Joi.boolean().optional().default(false),
   address: Joi.string().trim().allow(null, ""),

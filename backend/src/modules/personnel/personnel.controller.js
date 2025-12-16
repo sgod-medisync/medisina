@@ -48,7 +48,7 @@ export const fetchAllPersonnelByUser = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 100;
   const auditInfo = extractAuditInfo(req.user)
-  const result = await personnelService.fetchAllPersonnelByUser(auditInfo.personnelId, auditInfo.schoolDistrictDivision, page, limit);
+  const result = await personnelService.fetchAllPersonnelByUser( auditInfo.schoolName, page, limit);
 
   return res.status(StatusCodes.OK).json(result);
 })

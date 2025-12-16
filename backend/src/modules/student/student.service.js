@@ -58,16 +58,14 @@ class StudentService {
 
     return student;
   }
-  async getAllStudentsByAttendingPersonnel(associatedSchools, options = {}) {
+  async getAllStudentsByAttendingPersonnel(schoolName, options = {}) {
     const { page = 1, limit = 100 } = options;
     const skip = (page - 1) * limit;
-    const query = { isDeleted: false };
-    if (associatedSchools && Array.isArray(associatedSchools) && associatedSchools.length > 0) {
-      query.schoolId = { $in: associatedSchools };
-    } else if (associatedSchools && typeof associatedSchools === 'string') {
-      query.schoolId = associatedSchools;
-    }
-
+    const query = {
+      isDeleted: false,
+      schoolName: { $in: schoolName }
+     };
+   
     const [students, total] = await Promise.all([
       StudentModel
         .find(query)

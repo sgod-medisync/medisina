@@ -168,37 +168,12 @@ class PersonnelService {
   }
 
 
-  async fetchAllPersonnelByUser(userId, schoolDistrictDivision, page = 1, limit = 100) {
+  async fetchAllPersonnelByUser(schoolName, page = 1, limit = 100) {
     const query = {
-      isDeleted: false
+      isDeleted: false,
+      schoolName: { $in: schoolName }
+   
     };
-
-    let districts = schoolDistrictDivision;
-    if (!districts || (Array.isArray(districts) && districts.length === 0)) {
-      const currentUser = await PersonnelModel.findById(userId).select('schoolDistrictDivision').lean();
-      districts = currentUser?.schoolDistrictDivision;
-    }
-
-    // Use cached nurse/teacher user IDs
-    const nurseUserIds = await userRoleCache.getIds();
-
-    if (districts && Array.isArray(districts) && districts.length > 0) {
-      query.$and = [
-        { createdBy: { $in: nurseUserIds } },
-        {
-          $or: [
-            { createdBy: userId },
-            { schoolDistrictDivision: { $in: districts } }
-          ]
-        }
-      ];
-    } else {
-      query.$and = [
-        { createdBy: { $in: nurseUserIds } },
-        { createdBy: userId }
-      ];
-    }
-
     const skip = (page - 1) * limit;
 
     const [personnel, total] = await Promise.all([

@@ -25,7 +25,7 @@ const password = (value, helpers) => {
   if (!/\d/.test(value)) {
     return helpers.message('password must contain at least one number');
   }
-  if (!/[@$#!%*?+=()&-]/.test(value)) {
+  if (!/[@$#!%*?+=()\u0026_-]/.test(value)) {
     return helpers.message('password must include at least one special character');
   }
   return value;

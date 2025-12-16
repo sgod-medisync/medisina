@@ -23,12 +23,14 @@ export function getAllGradeFields() {
   ];
 }
 export function extractAuditInfo(user) {
+
   if (!user) return {};
   return {
     personnelName: `${user.firstName} ${user.lastName}`,
     personnelType: user.role,
     personnelId: user._id,
     schoolId: user.schoolId || null,
+    schoolName: user.schoolName || null,
     schoolDistrictDivision: user.schoolDistrictDivision || null,
     associatedSchools: user.getAssociatedSchools ? user.getAssociatedSchools() : null
   };

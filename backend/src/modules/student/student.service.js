@@ -62,7 +62,6 @@ class StudentService {
     const { page = 1, limit = 100 } = options;
     const skip = (page - 1) * limit;
     const query = { isDeleted: false };
-
     if (associatedSchools && Array.isArray(associatedSchools) && associatedSchools.length > 0) {
       query.schoolId = { $in: associatedSchools };
     } else if (associatedSchools && typeof associatedSchools === 'string') {
@@ -80,7 +79,6 @@ class StudentService {
         .lean(),
       StudentModel.countDocuments(query)
     ]);
-
 
 
     return {
@@ -301,6 +299,17 @@ class StudentService {
   async getSPEDStudents() {
     const students = await StudentModel.find({
       isSPED: true,
+      isDeleted: false
+    }).sort({ gradeLevel: 1, lastName: 1, firstName: 1 })
+      .select('-dateOfBirth -birthplace -address -telephoneNo -parentGuardian -parentContact')
+      .lean();
+
+    return students;
+  }
+
+  async getDropoutStudents() {
+    const students = await StudentModel.find({
+      isDropOut: true,
       isDeleted: false
     }).sort({ gradeLevel: 1, lastName: 1, firstName: 1 })
       .select('-dateOfBirth -birthplace -address -telephoneNo -parentGuardian -parentContact')

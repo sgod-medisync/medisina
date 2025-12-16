@@ -112,10 +112,21 @@ class PersonnelHealthCardService {
     return { ...updated, };
   }
 
-  async getAllHealthCards(userId, page = 1, limit = 100) {
+  async getAllHealthCards(associatedSchools, page = 1, limit = 100) {
     const skip = (page - 1) * limit;
 
-    const query = userId ? { 'interviewedBy.user': userId } : {};
+    const personnelQuery = { isDeleted: false };
+    if (associatedSchools && Array.isArray(associatedSchools) && associatedSchools.length > 0) {
+      personnelQuery.schoolId = { $in: associatedSchools };
+    } else if (associatedSchools && typeof associatedSchools === 'string') {
+      personnelQuery.schoolId = associatedSchools;
+    }
+
+    const personnelList = await Personnel.find(personnelQuery).lean();
+    const personnelIds = personnelList.map(p => p._id);
+    const personnelMap = Object.fromEntries(personnelList.map(p => [p._id.toString(), p]));
+
+    const query = personnelIds.length > 0 ? { personnel: { $in: personnelIds } } : {};
 
     const [records, total] = await Promise.all([
       PersonnelHealthCard.find(query)
@@ -124,9 +135,6 @@ class PersonnelHealthCardService {
         .lean(),
       PersonnelHealthCard.countDocuments(query)
     ]);
-
-    const personnelList = await Personnel.find().lean();
-    const personnelMap = Object.fromEntries(personnelList.map(p => [p._id.toString(), p]));
 
     const enrichedCards = await limitConcurrency(
       records,

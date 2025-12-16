@@ -35,7 +35,7 @@ router.route('/:perId/complete-history')
   .get(auth('Admin', 'Doctor', 'Nurse'), validate({ params: getPersonnelById }), personnelController.getCompletePersonnelHistory);
 
 router.route('/:perId')
-  .put(auth('Admin', 'Nurse', 'Doctor'), validate({ body: updatePersonnelSchema }), personnelController.updatePersonnelById)
+  .put(auth('Admin', 'Nurse', 'Doctor','Teacher'), validate({ body: updatePersonnelSchema }), personnelController.updatePersonnelById)
   .delete(auth('Admin', 'Nurse'), validate({ params: getPersonnelById }), personnelController.deletePersonnelById)
   .get(auth('Admin', 'Doctor', 'Nurse'), validate({ params: getPersonnelById }), personnelController.getPersonnelById)
   .post(auth('Admin', 'Doctor'), validate({ params: getPersonnelById }), personnelController.restorePersonnelById);

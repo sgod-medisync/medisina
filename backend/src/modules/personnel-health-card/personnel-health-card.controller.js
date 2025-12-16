@@ -33,8 +33,7 @@ export const getAllHealthCards = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 100;
   const auditInfo = extractAuditInfo(req.user);
 
-
-  const result = await PersonnelHealthCardService.getAllHealthCards(auditInfo.personnelId, page, limit);
+  const result = await PersonnelHealthCardService.getAllHealthCards(auditInfo.associatedSchools, page, limit);
 
   return res.status(StatusCodes.OK).json({
     data: result.data,
@@ -175,8 +174,7 @@ export const getHealthCardDSSByPersonnel = asyncHandler(async (req, res) => {
 
 export const getHealthCardDSSDashboard = asyncHandler(async (req, res) => {
   const auditInfo = extractAuditInfo(req.user);
-  const user = auditInfo.personnelType === 'Nurse' ? auditInfo.personnelId : null
-  const result = await PersonnelHealthCardService.getAllHealthCards(user);
+  const result = await PersonnelHealthCardService.getAllHealthCards(auditInfo.associatedSchools);
   const cards = result.data;
   const dashboard = await dssService.personnelHealthDashboard(cards);
   return res.status(StatusCodes.OK).json({
@@ -206,8 +204,7 @@ export const getPersonnelByCategory = asyncHandler(async (req, res) => {
   if (!validCategories.includes(category)) {
     throw new ApiError(`Invalid category. Valid categories are: ${validCategories.join(', ')}`, StatusCodes.BAD_REQUEST);
   }
-  const user = auditInfo.personnelType === 'Nurse' ? auditInfo.personnelId : null
-  const result = await PersonnelHealthCardService.getAllHealthCards(user);
+  const result = await PersonnelHealthCardService.getAllHealthCards(auditInfo.associatedSchools);
   const cards = result.data;
   const personnel = await dssService.getPersonnelByCategory(cards, category);
 
@@ -220,9 +217,8 @@ export const getPersonnelByCategory = asyncHandler(async (req, res) => {
 
 export const exportRiskStratificationToExcel = asyncHandler(async (req, res) => {
   const auditInfo = extractAuditInfo(req.user);
-  const user = auditInfo.personnelType === 'Nurse' ? auditInfo.personnelId : null;
 
-  const result = await PersonnelHealthCardService.getAllHealthCards(user);
+  const result = await PersonnelHealthCardService.getAllHealthCards(auditInfo.associatedSchools);
   const cards = result.data;
 
   // Get personnel data for all risk categories

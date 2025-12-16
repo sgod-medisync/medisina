@@ -26,7 +26,6 @@ export const login = asyncHandler(async (req, res, next) => {
       req.logIn(user, (err) => {
         if (err) return next(err);
 
-        logger.info(`Personnel logged in`, { meta: user.email });
 
         const rememberMe = Boolean(req.body?.rememberMe);
         if (rememberMe) {
@@ -74,7 +73,6 @@ export const resetPasswordWithToken = asyncHandler(async (req, res) => {
   if (!token) throw new ApiError("Token must be provided", StatusCodes.BAD_REQUEST);
   if (!newPassword) throw new ApiError("New Password must be provided", StatusCodes.BAD_REQUEST);
 
-  logger.info(`Reset password request with token from URL: ${token.substring(0, 10)}...`);
 
   const result = await authService.resetPassword(token, newPassword);
   res.status(StatusCodes.OK).json({ message: result });

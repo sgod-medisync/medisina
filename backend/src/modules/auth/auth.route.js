@@ -10,7 +10,7 @@ const router = express.Router()
 
 router.route('/')
   .get(auth('Admin', 'Nurse', 'Doctor'), authController.fetchAllUsers)
-  .put(auth('Admin', 'Nurse', 'Doctor'), validate({ body: updateUser }), authController.updateUser)
+  .put(auth('Admin', 'Nurse', 'Doctor','Teacher'), validate({ body: updateUser }), authController.updateUser)
 
 router.route('/search')
   .get(auth('Admin', 'Nurse', 'Doctor'), authController.searchUsers)

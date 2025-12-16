@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.route('/').post(auth('Doctor', 'Admin', 'Nurse'), validate({ body: createHealthExaminationSchema }), healthExaminationController.createHealthExamination).get(auth('Admin', 'Doctor'), healthExaminationController.fetchAllHealthExaminations);
 
-router.route('/my-records').get(auth('Doctor', 'Admin', 'Nurse'), healthExaminationController.fetchMyHealthExaminations);
+router.route('/my-records').get(auth('Doctor', 'Admin', 'Nurse','Teacher'), healthExaminationController.fetchMyHealthExaminations);
 
 router.route('/search').get(auth('Doctor', 'Admin', 'Nurse'), validate({ query: searchQuerySchema }), healthExaminationController.searchByName);
 

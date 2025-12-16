@@ -98,28 +98,21 @@ class AuthService {
     });
 
     if (isDuplicate) {
-      logger.info(`Personnel record already exists for ${personnelData.firstName} ${personnelData.lastName}`);
-      return null;
+      throw new ApiError(`Personnel record already exists for ${personnelData.firstName} ${personnelData.lastName}`, StatusCodes.CONFLICT);
     }
 
     const options = session ? { session, ordered: true } : { ordered: true };
     const [newPersonnel] = await PersonnelModel.create([personnelData], options);
-    logger.info(`Personnel record created: ${newPersonnel.perId} for user ${user.email}`);
     return newPersonnel;
   }
 
   async forgotPassword(email) {
     const user = await User.findOne({ email })
     if (!user) {
-      logger.info(`Password reset requested for non-existent email: ${email}`);
-      return "If an account exists with this email, a reset link has been sent."
+      throw new ApiError(`Password reset requested for non-existent email: ${email}`, StatusCodes.NOT_FOUND);
     }
 
     const { token, hashed } = generateResetToken()
-
-    logger.info(`Password reset token generated for ${email}`);
-    logger.info(`Plain token (first 10 chars): ${token.substring(0, 10)}...`);
-    logger.info(`Hashed token (first 10 chars): ${hashed.substring(0, 10)}...`);
 
     user.resetPasswordToken = hashed;
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
@@ -134,11 +127,7 @@ class AuthService {
     session.startTransaction();
 
     try {
-      // Log the received token for debugging
-      logger.info(`Reset password attempt with token: ${token.substring(0, 10)}...`);
-
       const hashedToken = verifyToken(token);
-      logger.info(`Hashed token: ${hashedToken.substring(0, 10)}...`);
 
       const user = await User.findOne({
         resetPasswordToken: hashedToken,
@@ -146,21 +135,16 @@ class AuthService {
       }).session(session);
 
       if (!user) {
-        // Check if token exists but is expired
         const expiredUser = await User.findOne({
           resetPasswordToken: hashedToken
         }).session(session);
 
         if (expiredUser) {
-          logger.warn(`Expired reset token for user: ${expiredUser.email}`);
           throw new ApiError("Reset token has expired. Please request a new password reset.", StatusCodes.BAD_REQUEST);
         }
 
-        logger.warn(`Invalid reset token attempted`);
         throw new ApiError("Invalid or expired token", StatusCodes.BAD_REQUEST);
       }
-
-      logger.info(`Password reset for user: ${user.email}`);
 
       user.password = password;
       user.resetPasswordToken = undefined;
@@ -263,6 +247,7 @@ class AuthService {
   }
 
   async updateUser(email, data) {
+    console.log(data)
     const existingUser = await User.findOne({
       isDeleted: false,
       email,

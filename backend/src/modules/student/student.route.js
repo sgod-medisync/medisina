@@ -23,6 +23,8 @@ router.get('/section/:gradeLevel/:section', studentController.getStudentsBySecti
 
 router.get('/sped', studentController.getSPEDStudents);
 
+router.get('/dropout', studentController.getDropoutStudents);
+
 router.get('/attending', studentController.getStudentsByAttendingPersonnel);
 
 router.get('/counts/grade-level', studentController.getStudentsByGradeLevelCount);

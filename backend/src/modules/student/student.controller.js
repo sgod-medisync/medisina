@@ -138,6 +138,14 @@ export const getSPEDStudents = asyncHandler(async (req, res) => {
   });
 });
 
+export const getDropoutStudents = asyncHandler(async (req, res) => {
+  const students = await StudentService.getDropoutStudents();
+
+  return res.status(StatusCodes.OK).json({
+    data: students
+  });
+});
+
 export const getStudentsByAttendingPersonnel = asyncHandler(async (req, res) => {
   const auditInfo = extractAuditInfo(req.user)
   const students = await StudentService.getStudentsByAttendingPersonnel(auditInfo.personnelId);
